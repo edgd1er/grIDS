@@ -1,0 +1,91 @@
+version: '3.2'
+services:
+  suricata:
+    image: suricata
+    build:
+      context: ./suricata
+      dockerfile: Dockerfile.suricata
+    network_mode: host
+    hostname: suricata
+    environment:
+      MYINTERFACE: "$MYINTERFACE"
+      TZ: "Europe/Paris"
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN
+    volumes:
+      - ./suricata/suricata.yaml:/etc/suricata/suricata.yaml
+      - ./suricata/conf.d/:/etc/supervisor/conf.d/
+      - ./logs/suricata/:/var/log/suricata/
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:${FILEBEAT_VERSION}
+    hostname: filebeat
+    container_name: filebeat
+    volumes:
+      - "./filebeat/filebeat.docker.yml:/usr/share/filebeat/filebeat.yml:ro"
+      - ./logs/suricata/:/logs/
+    environment:
+      - TZ="Europe/Paris"
+      - ELASTICSEARCH_HOST=${ELASTICSEARCH_HOST:-es01}
+      - KIBANA_HOST=${KIBANA_HOST:-kibana}
+      - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME:-elastic}
+      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD:-changeme}
+    command: [ 'run', '-e', '-c', '/usr/share/filebeat/filebeat.yml', '--strict.perms=false' ]
+    user: root
+    depends_on:
+      - es01
+      - kibana
+    links:
+      - es01
+      - kibana
+    networks:
+      - elk
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:$KIBANA_VERSION
+    container_name: kibana
+    hostname: kibana
+    environment:
+      TZ: "Europe/Paris"
+      SERVER_NAME: "kibana"
+      XPACK_MONITORING_ENABLED: "true"
+      ELASTICSEARCH_HOSTS: "http://es01:9200"
+    ports:
+      - 5601:5601
+    depends_on:
+      - es01
+    links:
+      - es01
+    networks:
+      - elk
+
+  es01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:$ELASTICSEARCH_VERSION
+    container_name: es01
+    environment:
+      - TZ="Europe/Paris"
+      - cluster.name=es-docker-cluster
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.license.self_generated.type=basic
+      - xpack.monitoring.collection.enabled=true
+      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
+      - ELASTIC_PASSWORD=changeme
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - data01:/usr/share/elasticsearch/data
+      - ./logs/es01/:/usr/share/elasticsearch/logs/
+    ports:
+      - 9200:9200
+      - 9300:9300
+    networks:
+      - elk
+volumes:
+  data01:
+    driver: local
+
+networks:
+  elk:
+    driver: bridge

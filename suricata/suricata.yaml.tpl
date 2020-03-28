@@ -12,8 +12,8 @@
 vars:
   # more specifc is better for alert accuracy and performance
   address-groups:
-    #HOME_NET: "[192.168.1.0/24]"
-    HOME_NET: "[192.168.0.0/16]"
+    #HOME_NET: "[192.168.0.0/16,10.0.0.0/8,172.16.0.0/12]"
+    HOME_NET: "[MYHOMENET]"
     #HOME_NET: "[10.0.0.0/8]"
     #HOME_NET: "[172.16.0.0/12]"
     #HOME_NET: "any"
@@ -51,7 +51,61 @@ vars:
 
 default-rule-path: /etc/suricata/rules
 rule-files:
- - downloaded.rules
+ - botcc.rules
+ # - botcc.portgrouped.rules
+ - ciarmy.rules
+ - compromised.rules
+ - drop.rules
+ - dshield.rules
+# - emerging-activex.rules
+ - emerging-attack_response.rules
+ - emerging-chat.rules
+ - emerging-current_events.rules
+ - emerging-dns.rules
+ - emerging-dos.rules
+ - emerging-exploit.rules
+ - emerging-ftp.rules
+# - emerging-games.rules
+# - emerging-icmp_info.rules
+# - emerging-icmp.rules
+ - emerging-imap.rules
+# - emerging-inappropriate.rules
+# - emerging-info.rules
+ - emerging-malware.rules
+ - emerging-misc.rules
+ - emerging-mobile_malware.rules
+ - emerging-netbios.rules
+ - emerging-p2p.rules
+ - emerging-policy.rules
+ - emerging-pop3.rules
+ - emerging-rpc.rules
+# - emerging-scada.rules
+# - emerging-scada_special.rules
+ - emerging-scan.rules
+# - emerging-shellcode.rules
+ - emerging-smtp.rules
+ - emerging-snmp.rules
+ - emerging-sql.rules
+ - emerging-telnet.rules
+ - emerging-tftp.rules
+ - emerging-trojan.rules
+ - emerging-user_agents.rules
+ - emerging-voip.rules
+ - emerging-web_client.rules
+ - emerging-web_server.rules
+# - emerging-web_specific_apps.rules
+ - emerging-worm.rules
+ - tor.rules
+# - decoder-events.rules # available in suricata sources under rules dir
+# - stream-events.rules  # available in suricata sources under rules dir
+ - http-events.rules    # available in suricata sources under rules dir
+ - smtp-events.rules    # available in suricata sources under rules dir
+ - dns-events.rules     # available in suricata sources under rules dir
+ - tls-events.rules     # available in suricata sources under rules dir
+# - modbus-events.rules  # available in suricata sources under rules dir
+# - app-layer-events.rules  # available in suricata sources under rules dir
+# - dnp3-events.rules       # available in suricata sources under rules dir
+# - ntp-events.rules       # available in suricata sources under rules dir
 
 classification-file: /etc/suricata/classification.config
 reference-config-file: /etc/suricata/reference.config
@@ -78,7 +132,7 @@ stats:
 outputs:
   # a line based alerts log similar to Snort's fast.log
   - fast:
-      enabled: no
+      enabled: yes
       filename: fast.log
       append: yes
       #filetype: regular # 'regular', 'unix_stream' or 'unix_dgram'
@@ -99,7 +153,9 @@ outputs:
       #  server: 127.0.0.1
       #  port: 6379
       #  async: true ## if redis replies are read asynchronously
-      #  mode: list ## possible values: list (default), channel
+      #  mode: list ## possible values: list|lpush (default), rpush, channel|publish
+      #             ## lpush and rpush are using a Redis list. "list" is an alias for lpush
+      #             ## publish is using a Redis channel. "channel" is an alias for publish
       #  key: suricata ## key or channel to use (default to suricata)
       # Redis pipelining set up. This will enable to only do a query every
       # 'batch-size' events. This should lower the latency induced by network
@@ -110,11 +166,11 @@ outputs:
       #    batch-size: 10 ## number of entry to keep in buffer
       types:
         - alert:
-            payload: yes             # enable dumping payload in Base64
+            # payload: yes             # enable dumping payload in Base64
             # payload-buffer-size: 4kb # max size of payload buffer to output in eve-log
             # payload-printable: yes   # enable dumping payload in printable (lossy) format
             # packet: yes              # enable dumping of packet (without stream segments)
-            http-body: yes           # enable dumping of http body in Base64
+            # http-body: yes           # enable dumping of http body in Base64
             # http-body-printable: yes # enable dumping of http body in printable format
             metadata: yes              # add L7/applayer fields, flowbit and other vars to the alert
 
@@ -184,7 +240,7 @@ outputs:
 
         #- dnp3
         #- nfs
-        #- ssh
+        - ssh
         #- stats:
         #    totals: yes       # stats for all threads merged together
         #    threads: no       # per thread stats
@@ -344,6 +400,7 @@ outputs:
   - stats:
       enabled: yes
       filename: stats.log
+      append: yes       # append to file (yes) or overwrite it (no)
       totals: yes       # stats for all threads merged together
       threads: no       # per thread stats
       #null-values: yes  # print counters that have value 0
@@ -488,7 +545,7 @@ logging:
 
 # Linux high speed capture support
 af-packet:
-  - interface: enp8s0
+  - interface: MYINTERFACE
     # Number of receive threads. "auto" uses the number of cores
     #threads: auto
     # Default clusterid. AF_PACKET will load balance packets based on flow.
@@ -574,7 +631,7 @@ af-packet:
 
 # Cross platform libpcap capture support
 pcap:
-  - interface: enp8s0
+  - interface: MYINTERFACE
     # On Linux, pcap will try to use mmaped capture and will use buffer-size
     # as total of memory used by the ring. So set this to something bigger
     # than 1% of your bandwidth.
@@ -866,8 +923,8 @@ asn1-max-frames: 256
 
 # Run suricata as user and group.
 #run-as:
-#  user: suri
-#  group: suri
+  #user: suricata
+  #group: nsm
 
 # Some logging module will use that name in event as identifier. The default
 # value is the hostname
@@ -1614,6 +1671,8 @@ ipfw:
 napatech:
     # The Host Buffer Allowance for all streams
     # (-1 = OFF, 1 - 100 = percentage of the host buffer that can be held back)
+    # This may be enabled when sharing streams with another application.
+    # Otherwise, it should be turned off.
     hba: -1
 
     # use_all_streams set to "yes" will query the Napatech service for all configured
@@ -1621,8 +1680,11 @@ napatech:
     # will be used.
     use-all-streams: yes
 
-    # The streams to listen on
-    streams: [1, 2, 3]
+    # The streams to listen on.  This can be either:
+    #   a list of individual streams (e.g. streams: [0,1,2,3])
+    # or
+    #   a range of streams (e.g. streams: ["0-3"])
+    streams: ["0-3"]
 
 # Tilera mpipe configuration. for use on Tilera TILE-Gx.
 mpipe:

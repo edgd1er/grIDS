@@ -85,7 +85,6 @@ celerybeat-schedule
 *.sage.py
 
 # dotenv
-.env
 
 # virtualenv
 .venv
@@ -104,3 +103,4 @@ ENV/
 
 # mypy
 .mypy_cache/
+!/filebeat/filebeat.docker.yml
