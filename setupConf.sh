@@ -12,9 +12,9 @@ MYINTERFACE=$(route | grep default | awk '{ print $8 }')
 setupSuricata(){
   echo "setupSuricata: start: changing file ${suricataConf}.tpl => ${suricataConf}"
   echo "setupSuricata: changing MYHOMENET =>${MYHOMENET}"
-  sed "s#MYHOMENET#${MYHOMENET}#g" ${suricataConf2}.tpl > ${suricataConf2}
+  sed "s#MYHOMENET#${MYHOMENET}#g" ${suricataConf}.tpl > ${suricataConf}
   echo "setupSuricata: changing MYINTERFACE =>${MYINTERFACE}"
-  sed -i "s/MYINTERFACE/${MYINTERFACE}/g" ${suricataConf2}
+  sed -i "s/MYINTERFACE/${MYINTERFACE}/g" ${suricataConf}
   echo "setupSuricata: end"
 }
 
