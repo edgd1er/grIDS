@@ -33,7 +33,7 @@ VOLUME /var/log/suricata
 RUN /usr/bin/suricata -V
 
 #rule to test suricata
-ADD emerging-icmp.rules /etc/suricata/rules/
+#ADD emerging-icmp.rules /etc/suricata/rules/
 
 # Start the Suricata/Filebeat service when the container is started
 #CMD service suricata start && service filebeat start && tail -F /var/log/suricata/suricata.log
