@@ -104,3 +104,5 @@ ENV/
 # mypy
 .mypy_cache/
 !/filebeat/filebeat.docker.yml
+
+/logs/
