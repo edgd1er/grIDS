@@ -1,10 +1,10 @@
-version: '3.2'
+version: '3.7'
 services:
   suricata:
     image: suricata
     build:
-      context: ./suricata
-      dockerfile: Dockerfile.suricata
+      context: ./suricata/
+      dockerfile: Dockerfile
     network_mode: host
     hostname: suricata
     environment:
@@ -13,26 +13,37 @@ services:
     cap_add:
       - NET_ADMIN
       - SYS_ADMIN
+      - NET_RAW
     volumes:
       - ./suricata/suricata.yaml:/etc/suricata/suricata.yaml
       - ./suricata/conf.d/:/etc/supervisor/conf.d/
       - ./logs/suricata/:/var/log/suricata/
 
   filebeat:
-    image: docker.elastic.co/beats/filebeat:${FILEBEAT_VERSION}
+    image: filebeat:${FILEBEAT_VERSION}
+    build:
+      context: ./filebeat/
+      dockerfile: Dockerfile
+      args:
+        - FILEBEAT_VERSION=${FILEBEAT_VERSION}
     hostname: filebeat
     container_name: filebeat
     volumes:
-      - "./filebeat/filebeat.docker.yml:/usr/share/filebeat/filebeat.yml:ro"
-      - ./logs/suricata/:/logs/
+      #- "./filebeat/filebeat.docker.yml:/usr/share/filebeat/filebeat.yml:ro"
+      - ./logs/suricata/:/var/log/suricata/
     environment:
       - TZ="Europe/Paris"
-      - ELASTICSEARCH_HOST=${ELASTICSEARCH_HOST:-es01}
       - KIBANA_HOST=${KIBANA_HOST:-kibana}
+      - ELASTICSEARCH_HOSTS=${ELASTICSEARCH_HOST:-es01}
       - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME:-elastic}
       - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD:-changeme}
     command: [ 'run', '-e', '-c', '/usr/share/filebeat/filebeat.yml', '--strict.perms=false' ]
     user: root
+    healthcheck:
+      test: filebeat test config
+      interval: 30s
+      timeout: 15s
+      retries: 5
     depends_on:
       - es01
       - kibana
@@ -51,8 +62,16 @@ services:
       SERVER_NAME: "kibana"
       XPACK_MONITORING_ENABLED: "true"
       ELASTICSEARCH_HOSTS: "http://es01:9200"
+      ELASTICSEARCH_URL: "http://es01:9200"
+      ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USERNAME:-elastic}
+      ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:-changeme}
     ports:
       - 5601:5601
+    healthcheck:
+      test: curl -s http://localhost:5601 >/dev/null; if [[ $$? == 52 ]]; then echo 0; else echo 1; fi
+      interval: 30s
+      timeout: 10s
+      retries: 5
     depends_on:
       - es01
     links:
@@ -65,13 +84,13 @@ services:
     container_name: es01
     environment:
       - TZ="Europe/Paris"
-      - cluster.name=es-docker-cluster
       - discovery.type=single-node
       - xpack.security.enabled=false
       - xpack.license.self_generated.type=basic
       - xpack.monitoring.collection.enabled=true
-      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
-      - ELASTIC_PASSWORD=changeme
+    #      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
+      - ELASTIC_USERNAME=${ELASTICSEARCH_USERNAME:-elastic}
+      - ELASTIC_PASSWORD=${ELASTICSEARCH_PASSWORD:-changeme}
     cap_add:
       - IPC_LOCK
     volumes:
@@ -80,6 +99,11 @@ services:
     ports:
       - 9200:9200
       - 9300:9300
+    healthcheck:
+      test: curl -s http://localhost:9200 >/dev/null; if [[ $$? == 52 ]]; then echo 0; else echo 1; fi
+      interval: 30s
+      timeout: 10s
+      retries: 5
     networks:
       - elk
 volumes:
