@@ -1,4 +1,36 @@
 # grIDS
+
+this is a fork from [gradiuscypher/grIDS](https://github.com/gradiuscypher/grIDS).
+
+the main changes from the original project, is a docker-compose file to run all in one command, 
+a setup Bash script that will update suricata.yaml files based on .env values. I add supervisor in suricata 
+to start suricata service. [Filebeat](https://www.elastic.co/guide/en/beats/filebeat/current/filebeat-reference-yml.html) is now a container from elastic.co using docker labels to set up.
+ The elk stack is on its own network (elk), only suricata container is on host's network + special cap_admin. 
+ 
+* prepare interface & files:
+```
+setupConf.sh
+```
+* build images:
+```
+docker-compose build
+``` 
+* start suricata & kibana:
+ ```
+ docker-compose up -d suricata kibana
+```
+* wait for both to become green (see logs): 
+```
+docker-compose logs -f 
+```
+* eventueally imports dashboards, create indexes, process logs:
+```
+docker-compose up -d filebeat
+```
+* navigate to http://0.0.0.0:5601
+
+***************************************************
+
 My network monitoring solution and tools that go along with it. This setup is designed to be contained in an all-in-one sort of system, but services can be separated into individual hosts if you have a higher load that requires more resources.
 
 The goal for this project is to help people combine multiple open-source tools to have a useful network monitoring solution. Within this project, I'll also include custom scripts that help make this system even more useful.
