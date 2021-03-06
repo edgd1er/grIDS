@@ -24,6 +24,8 @@ RUN apt update && \
 
 ADD logrotate.d /etc/logrotate.d/
 ADD cron.d /etc/cron.d/
+ADD conf.d /etc/supervisor/conf.d/
+ADD scripts /root/
 
 # Download the latest EmergingThreats ruleset
 RUN wget --no-parent -l1 -r --no-directories -P /etc/suricata/rules/ https://rules.emergingthreats.net/open/suricata/rules/

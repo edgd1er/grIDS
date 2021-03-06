@@ -40,18 +40,20 @@ setup.kibana:
 monitoring:
   enabled: true
   elasticsearch:
-    hosts: [ "${ELASTICSEARCH_HOSTS:es01:9200}" ]
+    hosts: [ "${ELASTICSEARCH_HOSTS:-es01:9200}" ]
     username: ${ELASTICSEARCH_USERNAME}
     password: ${ELASTICSEARCH_PASSWORD}
 
 #============================= enable Module  ===================================
 filebeat.modules:
   - module: suricata
+    eve:
+      enabled: true
+      var.paths: [ "/var/log/suricata/eve.json" ]
   - module: system
 
 #============================= inputs ===================================
 filebeats.inputs:
 - type: log
   paths:
-      - /logs/suricata.log
-      - /logs/eve.json
+      - /var/log/suricata.log

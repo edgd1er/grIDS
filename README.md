@@ -3,7 +3,7 @@
 this is a fork from [gradiuscypher/grIDS](https://github.com/gradiuscypher/grIDS).
 
 the main changes from the original project, is a docker-compose file to run all in one command, 
-a setup Bash script that will update suricata.yaml files based on .env values. I add supervisor in suricata 
+a setup Bash script that will update suricata.yaml files based on .env values. I added supervisor in suricata 
 to start suricata service. [Filebeat](https://www.elastic.co/guide/en/beats/filebeat/current/filebeat-reference-yml.html) is now a container from elastic.co using docker labels to set up.
  The elk stack is on its own network (elk), only suricata container is on host's network + special cap_admin. 
  

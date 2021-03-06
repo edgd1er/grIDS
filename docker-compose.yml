@@ -16,7 +16,6 @@ services:
       - NET_RAW
     volumes:
       - ./suricata/suricata.yaml:/etc/suricata/suricata.yaml
-      - ./suricata/conf.d/:/etc/supervisor/conf.d/
       - ./logs/suricata/:/var/log/suricata/
 
   filebeat:
@@ -61,10 +60,10 @@ services:
       TZ: "Europe/Paris"
       SERVER_NAME: "kibana"
       XPACK_MONITORING_ENABLED: "true"
-      ELASTICSEARCH_HOSTS: "http://es01:9200"
-      ELASTICSEARCH_URL: "http://es01:9200"
-      ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USERNAME:-elastic}
-      ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:-changeme}
+      ELASTICSEARCH_HOSTS: "${ELASTICSEARCH_HOSTS:-es01:9200}"
+      ELASTICSEARCH_URL: "http://${ELASTICSEARCH_HOSTS:-https://es01:9200}"
+      ELASTICSEARCH_USERNAME: "${ELASTICSEARCH_USERNAME:-elastic}"
+      ELASTICSEARCH_PASSWORD: "${ELASTICSEARCH_PASSWORD:-changeme}"
     ports:
       - 5601:5601
     healthcheck:
